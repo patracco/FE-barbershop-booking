@@ -1,12 +1,12 @@
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import LoginStack from "./LoginStack";
-import RegisterStack from "./RegisterStack";
-import BrowseStack from "./BrowseStack";
-import AppointmentStack from "./AppointmentStack"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import * as React from "react";
-import { useContext } from "react";
-import { UserContext } from "../context/UserContext.js";
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import LoginStack from './LoginStack';
+import RegisterStack from './RegisterStack';
+import PrenotaStack from './PrenotaStack';
+import AppointmentStack from './AppointmentStack';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as React from 'react';
+import { useContext } from 'react';
+import { UserContext } from '../context/UserContext.js';
 
 const Tab = createBottomTabNavigator();
 
@@ -16,63 +16,62 @@ export default function TabNavigator() {
   return (
     <Tab.Navigator>
       <Tab.Screen
-        name={user.username ? "Logout" : "Login/Register"}
+        name={user.username ? 'Logout' : 'Login/Register'}
         component={LoginStack}
-  
         options={{
           headerShown: false,
-          tabBarStyle: { display: "none" },
+          tabBarStyle: { display: 'none' },
           tabBarLabelStyle: { fontSize: 14 },
           tabBarStyle: {
-            backgroundColor: "black",
+            backgroundColor: 'black',
             paddingTop: 5,
-            tabBarIconStyle: { display: "none" },
+            tabBarIconStyle: { display: 'none' },
           },
-          tabBarActiveTintColor: "white",
+          tabBarActiveTintColor: 'white',
           tabBarIcon: ({ size, color }) => (
             <MaterialCommunityIcons
-              name={user.username ? "logout" : "login"}
-              color={"white"}
+              name={user.username ? 'logout' : 'login'}
+              color={'white'}
               size={size}
             />
           ),
         }}
       />
       <Tab.Screen
-        name="Browse"
-        component={BrowseStack}
+        name='Prenota'
+        component={PrenotaStack}
         options={{
           headerShown: false,
           tabBarLabelStyle: { fontSize: 14 },
           tabBarStyle: {
-            backgroundColor: "black",
+            backgroundColor: 'black',
             paddingTop: 5,
           },
-          tabBarActiveTintColor: "white",
+          tabBarActiveTintColor: 'white',
           tabBarIcon: ({ size, color }) => (
             <MaterialCommunityIcons
-              name="calendar-month"
-              color={"white"}
+              name='calendar-month'
+              color={'white'}
               size={size}
             />
           ),
         }}
       />
       <Tab.Screen
-        name="Appointments"
+        name='Appointments'
         component={AppointmentStack}
         options={{
           headerShown: false,
           tabBarLabelStyle: { fontSize: 14 },
           tabBarStyle: {
-            backgroundColor: "black",
+            backgroundColor: 'black',
             paddingTop: 5,
           },
-          tabBarActiveTintColor: "white",
+          tabBarActiveTintColor: 'white',
           tabBarIcon: ({ size, color }) => (
             <MaterialCommunityIcons
-              name="clipboard-text-search-outline"
-              color={"white"}
+              name='clipboard-text-search-outline'
+              color={'white'}
               size={size}
             />
           ),

@@ -1,6 +1,4 @@
-import React, { useState, useContext } from "react";
-import * as yup from "yup";
-import { NavigationContainer, StackActions } from "@react-navigation/native";
+import React, { useContext } from 'react';
 import {
   View,
   Image,
@@ -10,176 +8,166 @@ import {
   Pressable,
   Text,
   Alert,
-} from "react-native";
-import { Formik } from "formik";
-import { validateUser } from "../api.js";
-import { UserContext } from "../context/UserContext.js";
+  Keyboard,
+  TouchableWithoutFeedback,
+} from 'react-native';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { UserContext } from '../context/UserContext';
+import { useAuth } from '../api/hooks/useAuth';
+
+// Validation schema using zod
+const loginSchema = z.object({
+  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
 
 const Login = ({ navigation }) => {
-  // const [user, setUser] = useState({});
-  const { user, setUser } = useContext(UserContext);
-  const handleLogin = (values) => {
-    validateUser(values.username, values.password)
-      .then((res) => {
-        setUser(res.user);
-        navigation.navigate("Browse");
-      })
-      .catch(() => {
-        Alert.alert("Invalid username or password");
-      });
+  const auth = useAuth();
+  const { setUser } = useContext(UserContext);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (values) => {
+    try {
+      const res = await auth.login(values.email, values.password);
+      if (res && res.data) {
+        setUser(res.data.user);
+        navigation.navigate('Prenota');
+      }
+    } catch (error) {
+      Alert.alert('Invalid email or password');
+    }
   };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View>
-        <Image style={styles.logo} source={require("../assets/Barber.png")} />
-        <Formik
-          initialValues={{ username: "", password: "" }}
-          userLogin
-          onSubmit={(values) => handleLogin(values)}
-        >
-          {({
-            handleChange,
-            touched,
-            errors,
-            handleBlur,
-            handleSubmit,
-            values,
-          }) => (
-            <View>
-              <TextInput
-                style={styles.username}
-                textAlign={"center"}
-                onChangeText={handleChange("username")}
-                onBlur={handleBlur("username")}
-                value={values.username}
-                placeholder="username..."
-                maxLength={10}
-                placeholderTextColor={"white"}
-                autoCapitalize="none"
-              />
-              {touched.username && errors.username && (
-                <Text style={styles.errors}>{errors.username}</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView style={styles.container}>
+        <View>
+          <Image style={styles.logo} source={require('../assets/Barber.png')} />
+          <View>
+            <Controller
+              control={control}
+              name='email'
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  textAlign={'center'}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  value={value}
+                  placeholder='Email'
+                  maxLength={254}
+                  placeholderTextColor={'white'}
+                  autoCapitalize='none'
+                />
               )}
-              <TextInput
-                style={styles.password}
-                onChangeText={handleChange("password")}
-                onBlur={handleBlur("password")}
-                value={values.password}
-                placeholderTextColor={"white"}
-                secureTextEntry={true}
-                placeholder="password..."
-                maxLength={10}
-              />
-              {touched.password && errors.password && (
-                <Text style={styles.errors}>{errors.password}</Text>
+            />
+            {errors.email && (
+              <Text style={styles.errors}>{errors.email.message}</Text>
+            )}
+            <Controller
+              control={control}
+              name='password'
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  value={value}
+                  placeholderTextColor={'white'}
+                  secureTextEntry={true}
+                  placeholder='Password'
+                  maxLength={32}
+                />
               )}
-              <Pressable
-                onPress={handleSubmit}
-                style={styles.login}
-                textAlign={"center"}
+            />
+            {errors.password && (
+              <Text style={styles.errors}>{errors.password.message}</Text>
+            )}
+            <Pressable
+              onPress={handleSubmit(onSubmit)}
+              style={styles.login}
+              textAlign={'center'}
+            >
+              <Text style={styles.loginText}>Login</Text>
+            </Pressable>
+            <Pressable style={styles.registerLink}>
+              <Text
+                style={styles.registerText}
+                onPress={() => navigation.navigate('Register')}
               >
-                <Text
-                  onPress={handleSubmit}
-                  type="submit"
-                  style={styles.loginText}
-                  title="Login"
-                >
-                  Login
-                </Text>
-              </Pressable>
-              {/* <Pressable style={styles.forgottenLink}>
-                <Text style={styles.forgottenText}>Forgot Password?</Text>
-              </Pressable> */}
-              <Pressable style={styles.registerLink}>
-                <Text
-                  style={styles.registerText}
-                  onPress={() => navigation.navigate("Register")}
-                >
-                  Not Registered?
-                </Text>
-              </Pressable>
-            </View>
-          )}
-        </Formik>
-      </View>
-    </SafeAreaView>
+                Not Registered?
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "black",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'black',
   },
   logo: {
     width: 250,
     height: 200,
     marginBottom: 30,
   },
-  username: {
+  input: {
     padding: 5,
     height: 40,
     width: 240,
     borderWidth: 2,
     borderRadius: 25,
     marginBottom: 15,
-    borderColor: "white",
-    textAlign: "center",
-    color: "white",
+    borderColor: 'white',
+    textAlign: 'center',
+    color: 'white',
     fontSize: 20,
-  },
-  password: {
-    height: 40,
-    borderWidth: 2,
-    borderRadius: 25,
-    marginBottom: 15,
-    borderColor: "white",
-    textAlign: "center",
-    color: "white",
-    width: 240,
-    fontSize: 20,
-  },
-  forgottenLink: {
-    alignItems: "center",
-    marginBottom: 10,
-  },
-
-  forgottenText: {
-    color: "white",
-    fontSize: 14,
   },
   login: {
     height: 40,
     borderWidth: 2,
     borderRadius: 25,
     marginBottom: 15,
-    borderColor: "white",
-    justifyContent: "center",
-    alignItems: "center",
+    borderColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
     width: 240,
-    backgroundColor: "white",
+    backgroundColor: 'white',
   },
   loginText: {
     fontSize: 20,
   },
   registerLink: {
     bottom: -100,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
   registerText: {
-    color: "white",
+    color: 'white',
     fontSize: 16,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   errors: {
     fontSize: 14,
-    color: "white",
+    color: 'white',
     marginBottom: 5,
     marginTop: -10,
-    textAlign: "center",
+    textAlign: 'center',
     width: 240,
   },
 });

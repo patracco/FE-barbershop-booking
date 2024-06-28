@@ -1,80 +1,75 @@
-import * as React from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import Login from "./Login.jsx";
-import Register from "./Register.jsx";
-import Browse from "./Browse.jsx";
-
+import * as React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Login from './Login.jsx';
+import Register from './Register.jsx';
+import EventsPage from './EventsPage.jsx';
 
 const Tab = createBottomTabNavigator();
 
 function Home() {
-    return (
-      <Tab.Navigator>
+  return (
+    <Tab.Navigator>
       <Tab.Screen
-        name="Login"
+        name='Login'
         component={Login}
         options={{
           headerShown: false,
-          tabBarStyle: { display: "none" },
+          tabBarStyle: { display: 'none' },
           tabBarLabelStyle: { fontSize: 14 },
           tabBarStyle: {
-            backgroundColor: "black",
+            backgroundColor: 'black',
             paddingTop: 5,
-            tabBarIconStyle: { display: "none" },
+            tabBarIconStyle: { display: 'none' },
           },
-          tabBarActiveTintColor: "white",
+          tabBarActiveTintColor: 'white',
           tabBarIcon: ({ size, color }) => (
-            <MaterialCommunityIcons
-              name="login"
-              color={"white"}
-              size={size}
-            />
+            <MaterialCommunityIcons name='login' color={'white'} size={size} />
           ),
         }}
       />
       <Tab.Screen
-        name="Browse"
-        component={Browse}
+        name='Prenota'
+        component={EventsPage}
         options={{
           headerShown: false,
           tabBarLabelStyle: { fontSize: 14 },
           tabBarStyle: {
-            backgroundColor: "black",
+            backgroundColor: 'black',
             paddingTop: 5,
           },
-          tabBarActiveTintColor: "white",
+          tabBarActiveTintColor: 'white',
           tabBarIcon: ({ size, color }) => (
             <MaterialCommunityIcons
-              name="calendar-month"
-              color={"white"}
+              name='calendar-month'
+              color={'white'}
               size={size}
             />
           ),
         }}
       />
       <Tab.Screen
-        name="Register"
+        name='Register'
         component={Register}
         options={{
           headerShown: false,
           tabBarLabelStyle: { fontSize: 14 },
           tabBarStyle: {
-            backgroundColor: "black",
+            backgroundColor: 'black',
             paddingTop: 5,
           },
-          tabBarActiveTintColor: "white",
+          tabBarActiveTintColor: 'white',
           tabBarIcon: ({ size, color }) => (
             <MaterialCommunityIcons
-              name="card-account-details"
-              color={"white"}
+              name='card-account-details'
+              color={'white'}
               size={size}
             />
           ),
         }}
       />
     </Tab.Navigator>
-    );
-  }
+  );
+}
 
-  export default Home;
+export default Home;

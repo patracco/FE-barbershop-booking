@@ -1,6 +1,37 @@
-import axios from "axios";
-const url = "https://rich-gold-basket-clam-cape.cyclic.app/api";
+import Cookies from 'js-cookie';
+import { axiosInstance } from '../api';
+
+import axios from 'axios';
+const url = 'https://alien-resolved-doe.ngrok-free.app/api';
 export const host = url;
+
+export const api = {
+  get: <T>(url: string, params?: object) =>
+    axiosInstance.get<T>(url, {
+      headers: {
+        token: Cookies.get('token'),
+      },
+      ...params,
+    }),
+  post: <T>(url: string, data: any) =>
+    axiosInstance.post<T>(url, data, {
+      headers: {
+        token: Cookies.get('token'),
+      },
+    }),
+  patch: <T>(url: string, data: any) =>
+    axiosInstance.patch<T>(url, data, {
+      headers: {
+        token: Cookies.get('token'),
+      },
+    }),
+  delete: <T>(url: string) =>
+    axiosInstance.delete<T>(url, {
+      headers: {
+        token: Cookies.get('token'),
+      },
+    }),
+};
 
 export const bookingApi = axios.create({
   baseURL: url,
@@ -15,7 +46,7 @@ export const validateUser = (username, body) => {
 };
 
 export const getAllAppointments = () => {
-  return bookingApi.get("/appointments").then((res) => {
+  return bookingApi.get('/appointments').then((res) => {
     return res.data.appointments;
   });
 };
