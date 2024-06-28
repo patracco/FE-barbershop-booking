@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { setStoredMe } from '../user-storage';
 import { Alert } from 'react-native';
+import { axiosInstance } from '../api';
 
 export function useAuth() {
   const queryClient = useQueryClient();

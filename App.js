@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { UserProvider } from './context/UserContext';
-import TabNavigator from './Screens/TabNavigator.jsx';
+import TabNavigator from './Screens/TabNavigator';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { AppointmentProvider } from './context/AppointmentBooked';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
