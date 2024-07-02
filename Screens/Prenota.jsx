@@ -18,6 +18,7 @@ import { useDeleteBooking } from '../api/hooks/bookings/useDeleteBooking';
 import { canUserBookEvent } from '../api/utils/canUserBookEvent';
 import { useMe } from '../api/hooks/useMe';
 import DeleteModal from '../components/DeleteModal';
+import DeleteWarningModal from '../components/DeleteWarningModal';
 
 const Prenota = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -35,7 +36,7 @@ const Prenota = () => {
   });
   const [onWaitingList, setOnWaitingList] = useState();
   const [slotsAvailable, setSlotsAvailable] = useState();
-  const [isSessionSoon, setIsSessionSoon] = useState();
+  const [isSoon, setIsSoon] = useState();
   const [dayTime, setDayTime] = useState();
 
   const { me } = useMe();
@@ -46,16 +47,16 @@ const Prenota = () => {
   const calculateIsSessionSoon = (event) => {
     const now = new Date();
     const start = new Date(event.start);
-    return start - now < 14 * 60 * 60 * 1000; // Less than 14 hours
+    return start - now < 24 * 60 * 60 * 1000; // Less than 2 hours
   };
 
-  // const isSessionBookedByUser = (session) => {
-  //   const isBooked = session.bookings.some(
-  //     (booking) => booking.user._id === me._id
-  //   );
-  //   console.log('Is session booked by user:', isBooked);
-  //   return isBooked;
-  // };
+  const isSessionBookedByUser = (session) => {
+    const booking = session.bookings.find(
+      (booking) => booking.user._id === me._id
+    );
+    const isBooked = !!booking;
+    return { isBooked, booking };
+  };
 
   const addToWaitlist = async () => {
     const updatedEvent = {
@@ -114,40 +115,33 @@ const Prenota = () => {
     setOnWaitingList(event?.waitingList.includes(me?._id));
 
     const isSoon = calculateIsSessionSoon(event);
-    setIsSessionSoon(isSoon);
+    setIsSoon(isSoon);
 
-    const bookingObj = {
-      session: event?._id,
-      sessionName: event?.title,
-      user: me?._id,
-      stripeCustomerId: me?.stripeCustomerId,
-      start: event?.start,
-      end: event?.end,
-    };
-    setBookingObject(bookingObj);
-    setSessionModalOpen(true);
+    const { isBooked, booking } = isSessionBookedByUser(event);
 
-    if (typeof event?.bookings !== null && event?.bookings.length > 0) {
-      const booking = event?.bookings.filter((b) => {
-        return (
-          b.user._id === me?._id &&
-          new Date(b.start).toString() === event?.start.toString() &&
-          b.sessionName === event?.title
-        );
-      });
-
-      if (booking.length > 0) {
-        setClickedBookingToDel(booking);
-        if (isSoon) {
-          setWarningModalOpen(true);
-        } else {
-          setDeleteModalOpen(true);
-        }
+    if (isBooked) {
+      setClickedBookingToDel(booking);
+      if (isSoon) {
+        setWarningModalOpen(true);
+      } else {
+        setDeleteModalOpen(true);
       }
+    } else {
+      const bookingObj = {
+        session: event?._id,
+        sessionName: event?.title,
+        user: me?._id,
+        stripeCustomerId: me?.stripeCustomerId,
+        start: event?.start,
+        end: event?.end,
+        cost: event?.crediti,
+      };
+      setBookingObject(bookingObj);
+      setSessionModalOpen(true);
     }
   };
 
-  const onSubmit = async () => {
+  const onSubmit = () => {
     if (slotsAvailable >= 1) {
       createBooking(bookingObject);
 
@@ -169,9 +163,15 @@ const Prenota = () => {
   };
 
   const onSubmitDelete = () => {
-    if (slotsAvailable === 0 && clickedEvent.waitingList.length > 0) {
-      deleteBooking({ clickedBookingToDel, clickedEvent });
+    deleteBooking({ clickedBookingToDel, clickedEvent, isSoon });
 
+    if (isSoon) {
+      setWarningModalOpen(false); // Close warning modal
+    } else {
+      setDeleteModalOpen(false); // Close delete modal
+    }
+
+    if (slotsAvailable === 0 && clickedEvent.waitingList.length > 0) {
       const smsText = `si è liberato un posto per ${
         clickedEvent?.title
       } il ${dayTime}, prenota subito per non perdere l'occasione! ${
@@ -181,7 +181,6 @@ const Prenota = () => {
       }`;
       useSMS(clickedEvent, smsText);
     }
-    deleteBooking({ clickedBookingToDel, clickedEvent, isSessionSoon });
   };
 
   if (isLoading || isFetching) {
@@ -303,15 +302,15 @@ const Prenota = () => {
         onBook={onSubmit}
         onClose={() => setSessionModalOpen(false)}
       />
-      {/* <DeleteWarningModal
-        warningModalOpen={warningModalOpen}
-        setWarningModalOpen={setWarningModalOpen}
-        onSubmitDelete={onSubmitDelete}
-      /> */}
+      <DeleteWarningModal
+        isVisible={warningModalOpen}
+        onClose={() => setWarningModalOpen(false)}
+        onDelete={onSubmitDelete}
+      />
       <DeleteModal
-        deleteModalOpen={deleteModalOpen}
-        setDeleteModalOpen={setDeleteModalOpen}
-        onSubmitDelete={onSubmitDelete}
+        isVisible={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onDelete={onSubmitDelete}
       />
     </View>
   );

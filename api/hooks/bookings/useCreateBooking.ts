@@ -18,6 +18,7 @@ const createBooking = async (clickedEventAndBookingObject) => {
 
     if (resp.data.status === 'success') {
       Alert.alert('Success', 'Sessione prenotata');
+      return true;
     }
 
     return resp.data.data;

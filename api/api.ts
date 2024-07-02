@@ -32,12 +32,13 @@ export const api = {
       },
     });
   },
-  delete: async <T>(url: string) => {
+  delete: async <T>(url: string, data: {}) => {
     const token = await getToken();
     return axiosInstance.delete<T>(url, {
       headers: {
         token: token,
       },
+      data,
     });
   },
 };

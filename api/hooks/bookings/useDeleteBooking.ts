@@ -9,24 +9,24 @@ import {
 } from '@tanstack/react-query';
 
 const deleteBooking = async (data) => {
-  console.log(data);
-  const { clickedBookingToDel, clickedEvent, isSessionSoon } = data;
+  const { clickedBookingToDel, clickedEvent, isSoon } = data;
+  const newData = {
+    clickedEvent,
+    isSoon,
+  };
   try {
     const resp = await api.delete(
-      apiRoutes.bookings + `/${clickedBookingToDel._id}`
+      apiRoutes.bookings + `/${clickedBookingToDel._id}`,
+      newData
     );
-    // const resp = await api.delete(
-    //   apiRoutes.bookings + `/${clickedBookingToDel[0]._id}`,
-    //   {
-    //     data: { event: clickedEvent, isSessionSoon },
-    //   }
-    // );
 
     if (resp.status === 204) {
       Alert.alert('Booking rimosso con successo');
+      return true;
     }
   } catch (error) {
     Alert.alert(error.response.data.message);
+    return false;
   }
 };
 
@@ -36,7 +36,7 @@ export const useDeleteBooking = (): UseMutateFunction<
   {
     clickedBookingToDel: Booking[];
     clickedEvent: Event;
-    isSessionSoon: boolean;
+    isSoon: boolean;
   },
   unknown
 > => {
@@ -48,32 +48,39 @@ export const useDeleteBooking = (): UseMutateFunction<
 
       // Snapshot the previous value
       const previousBookings =
-        queryClient.getQueryData({ queryKey: [queryKeys.bookings] }) || [];
+        (await queryClient.getQueryData({ queryKey: [queryKeys.bookings] })) ||
+        [];
       const updatedBookings = previousBookings.filter(
-        (b) => b._id !== data.clickedBookingToDel[0]._id
+        (b) => b._id !== data.clickedBookingToDel._id
       );
 
-      queryClient.setQueryData([queryKeys.bookings], updatedBookings);
-      queryClient.setQueryData([queryKeys.events], updatedBookings);
+      await queryClient.setQueryData({
+        queryKey: [queryKeys.bookings],
+        data: updatedBookings,
+      });
+      await queryClient.setQueryData({
+        queryKey: [queryKeys.events],
+        data: updatedBookings,
+      });
 
       return { previousBookings };
     },
-    onError: (error, variables, context) => {
+    onError: async (error, variables, context) => {
       if (context?.previousBookings) {
-        queryClient.setQueryData({
+        await queryClient.setQueryData({
           queryKey: [queryKeys.bookings],
           data: context.previousBookings,
         });
       }
       Alert.alert(error.message);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKeys.bookings] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.events] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [queryKeys.bookings] });
+      await queryClient.invalidateQueries({ queryKey: [queryKeys.events] });
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKeys.bookings] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.events] });
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: [queryKeys.bookings] });
+      await queryClient.invalidateQueries({ queryKey: [queryKeys.events] });
     },
   });
   return mutate;
