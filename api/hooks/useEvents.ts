@@ -14,7 +14,7 @@ async function getEvents(dates) {
     const response = await api.get(apiRoutes.events, {
       params: { start, end },
     });
-    console.log('API response:', response.data.data.data);
+    // console.log('API response:', response.data.data.data);
     return response.data.data.data || [];
   } catch (error) {
     console.error('API error:', error.message);

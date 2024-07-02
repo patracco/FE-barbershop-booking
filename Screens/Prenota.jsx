@@ -6,14 +6,82 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useEvents } from '../api/hooks/useEvents';
 import { startOfDay, endOfDay, format, subDays, addDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import sessionColors from '../constants/sessionColors';
+import SessionModal from '../components/SessionModal';
+import { useCreateBooking } from '../api/hooks/bookings/useCreateBooking';
+import { useDeleteBooking } from '../api/hooks/bookings/useDeleteBooking';
+import { canUserBookEvent } from '../api/utils/canUserBookEvent';
+import { useMe } from '../api/hooks/useMe';
+import DeleteModal from '../components/DeleteModal';
 
-const EventsList = () => {
+const Prenota = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [sessionModalOpen, setSessionModalOpen] = useState(false);
+  const [warningModalOpen, setWarningModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [clickedEvent, setClickedEvent] = useState();
+  const [clickedBookingToDel, setClickedBookingToDel] = useState();
+  const [bookingObject, setBookingObject] = useState({
+    sessionId: '',
+    sessionName: '',
+    user: '',
+    start: '',
+    end: '',
+  });
+  const [onWaitingList, setOnWaitingList] = useState();
+  const [slotsAvailable, setSlotsAvailable] = useState();
+  const [isSessionSoon, setIsSessionSoon] = useState();
+  const [dayTime, setDayTime] = useState();
+
+  const { me } = useMe();
+  const { mutate: createBooking } = useCreateBooking();
+  const deleteBooking = useDeleteBooking();
+  // const patchEvent = usePatchEvent();
+
+  const calculateIsSessionSoon = (event) => {
+    const now = new Date();
+    const start = new Date(event.start);
+    return start - now < 14 * 60 * 60 * 1000; // Less than 14 hours
+  };
+
+  // const isSessionBookedByUser = (session) => {
+  //   const isBooked = session.bookings.some(
+  //     (booking) => booking.user._id === me._id
+  //   );
+  //   console.log('Is session booked by user:', isBooked);
+  //   return isBooked;
+  // };
+
+  const addToWaitlist = async () => {
+    const updatedEvent = {
+      addToWaitingList: me._id, // Specify the user to be added
+    };
+
+    try {
+      // await patchEvent({ eventId: clickedEvent._id, updatedEvent });
+      Alert.alert('Success', 'Aggiunto alla waiting list');
+    } catch (error) {
+      Alert.alert('Error', 'Error updating the waiting list.');
+    }
+  };
+
+  const removeFromWaitingList = async () => {
+    const updatedEvent = {
+      removeFromWaitingList: me._id, // Specify the user to be removed
+    };
+
+    try {
+      // await patchEvent({ eventId: clickedEvent._id, updatedEvent });
+      Alert.alert('Success', 'Rimosso dalla waiting list');
+    } catch (error) {
+      Alert.alert('Error', 'Error updating the waiting list.');
+    }
+  };
 
   const startOfCurrentDay = useCallback(
     () => startOfDay(currentDate),
@@ -39,8 +107,81 @@ const EventsList = () => {
     setCurrentDate((prevDate) => addDays(prevDate, 1));
   };
 
-  const handleSelectSession = (session) => {
-    console.log('Selected session:', session);
+  const onSelectEvent = (event) => {
+    console.log(event);
+    setClickedEvent(event);
+    setSlotsAvailable(event?.maxGroupSize - event?.bookings.length);
+    setOnWaitingList(event?.waitingList.includes(me?._id));
+
+    const isSoon = calculateIsSessionSoon(event);
+    setIsSessionSoon(isSoon);
+
+    const bookingObj = {
+      session: event?._id,
+      sessionName: event?.title,
+      user: me?._id,
+      stripeCustomerId: me?.stripeCustomerId,
+      start: event?.start,
+      end: event?.end,
+    };
+    setBookingObject(bookingObj);
+    setSessionModalOpen(true);
+
+    if (typeof event?.bookings !== null && event?.bookings.length > 0) {
+      const booking = event?.bookings.filter((b) => {
+        return (
+          b.user._id === me?._id &&
+          new Date(b.start).toString() === event?.start.toString() &&
+          b.sessionName === event?.title
+        );
+      });
+
+      if (booking.length > 0) {
+        setClickedBookingToDel(booking);
+        if (isSoon) {
+          setWarningModalOpen(true);
+        } else {
+          setDeleteModalOpen(true);
+        }
+      }
+    }
+  };
+
+  const onSubmit = async () => {
+    if (slotsAvailable >= 1) {
+      createBooking(bookingObject);
+
+      if (clickedEvent?.waitingList.includes(me?._id)) {
+        removeFromWaitingList();
+      }
+    }
+
+    if (slotsAvailable === 0) {
+      if (!onWaitingList) {
+        addToWaitlist();
+      } else {
+        if (clickedEvent?.waitingList.includes(me?._id)) {
+          removeFromWaitingList();
+        }
+      }
+    }
+    setSessionModalOpen(false);
+  };
+
+  const onSubmitDelete = () => {
+    if (slotsAvailable === 0 && clickedEvent.waitingList.length > 0) {
+      deleteBooking({ clickedBookingToDel, clickedEvent });
+
+      const smsText = `si è liberato un posto per ${
+        clickedEvent?.title
+      } il ${dayTime}, prenota subito per non perdere l'occasione! ${
+        clickedEvent?.title === 'Pilates' || clickedEvent?.title === 'Reformer'
+          ? 'Reformer Pilates'
+          : 'Perform Training'
+      }`;
+      useSMS(clickedEvent, smsText);
+    }
+    deleteBooking({ clickedBookingToDel, clickedEvent, isSessionSoon });
   };
 
   if (isLoading || isFetching) {
@@ -61,7 +202,7 @@ const EventsList = () => {
   }
 
   const sessionsByTime = (Array.isArray(dbEvents) ? dbEvents : [])
-    .sort((a, b) => new Date(a.start) - new Date(b.start)) // Sort events by start time
+    .sort((a, b) => new Date(a.start) - new Date(b.start))
     .reduce((acc, session) => {
       const time = format(new Date(session.start), 'HH:mm', { locale: it });
       if (!acc[time]) acc[time] = [];
@@ -143,7 +284,7 @@ const EventsList = () => {
                             sessionColors.default,
                         },
                       ]}
-                      onPress={() => handleSelectSession(session)}
+                      onPress={() => onSelectEvent(session)}
                     >
                       <Text style={styles.sessionTitle}>{session.title}</Text>
                       <Text
@@ -156,16 +297,31 @@ const EventsList = () => {
           </View>
         ))}
       </ScrollView>
+      <SessionModal
+        isVisible={sessionModalOpen}
+        session={clickedEvent}
+        onBook={onSubmit}
+        onClose={() => setSessionModalOpen(false)}
+      />
+      {/* <DeleteWarningModal
+        warningModalOpen={warningModalOpen}
+        setWarningModalOpen={setWarningModalOpen}
+        onSubmitDelete={onSubmitDelete}
+      /> */}
+      <DeleteModal
+        deleteModalOpen={deleteModalOpen}
+        setDeleteModalOpen={setDeleteModalOpen}
+        onSubmitDelete={onSubmitDelete}
+      />
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
     padding: 10,
-    paddingTop: 40, // Adjusted to ensure margin at the top
+    paddingTop: 40,
   },
   loadingContainer: {
     flex: 1,
@@ -253,4 +409,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EventsList;
+export default Prenota;

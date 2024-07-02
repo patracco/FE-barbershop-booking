@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { setStoredMe } from '../user-storage';
 import { Alert } from 'react-native';
-import { axiosInstance } from '../api';
+import { queryKeys } from '../../constants/queryKeys';
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -21,7 +21,8 @@ export function useAuth() {
 
       if (resp.data?.status === 'success') {
         await AsyncStorage.setItem('token', resp.data.token); // Store token in AsyncStorage
-        queryClient.setQueryData(['me'], user);
+        await queryClient.setQueryData({ queryKey: [queryKeys.me] }, user);
+        // queryClient.setQueryData(['me'], user);
         setStoredMe(user);
         Alert.alert('Benvenuto!');
         return resp.data;

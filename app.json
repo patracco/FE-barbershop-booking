@@ -14,10 +14,13 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "jsEngine": "hermes"
+      "jsEngine": "hermes",
+      "bundleIdentifier": "com.anonymous.perform-native"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,8 +33,17 @@
       "favicon": "./assets/favicon.png"
     },
     "packagerOpts": {
-      "sourceExts": ["js", "json", "ts", "tsx", "jsx"],
-      "assetExts": ["ttf", "mp4"],
+      "sourceExts": [
+        "js",
+        "json",
+        "ts",
+        "tsx",
+        "jsx"
+      ],
+      "assetExts": [
+        "ttf",
+        "mp4"
+      ],
       "maxWorkers": 10
     }
   }
